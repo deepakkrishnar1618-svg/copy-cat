@@ -47,11 +47,7 @@ Copy Cat is a fork of [Maccy](https://github.com/p0deje/Maccy) rebuilt with a **
 
 ## Screenshots
 
-> Add screenshots of the running app here. Suggested shots:
-> 1. The card strip panel open over a browser
-> 2. A pinboard tab with a few cards
-> 3. The menu bar popup
-> 4. The Excluded Apps panel
+<img src="assets/github-showcase.png" alt="Copy Cat — card strip panel showing clipboard history with app-branded cards, OG thumbnails, and pinboard tabs" />
 
 ---
 

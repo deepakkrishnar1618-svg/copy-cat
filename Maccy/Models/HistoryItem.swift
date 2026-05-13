@@ -199,6 +199,18 @@ class HistoryItem {
     universalClipboard && contentData([.html, .tiff, .png, .jpeg, .rtf, .string, .heic]) != nil
   }
 
+  var sourceURL: String? {
+    if let data = contentData([.chromiumSourceUrl]),
+       let urlString = String(data: data, encoding: .utf8) {
+      return urlString
+    }
+    if let data = contentData([NSPasteboard.PasteboardType("public.url")]),
+       let urlString = String(data: data, encoding: .utf8) {
+      return urlString
+    }
+    return nil
+  }
+
   private func contentData(_ types: [NSPasteboard.PasteboardType]) -> Data? {
     let content = contents.first(where: { content in
       return types.contains(NSPasteboard.PasteboardType(content.type))

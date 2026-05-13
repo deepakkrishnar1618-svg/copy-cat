@@ -33,6 +33,17 @@
 		2FB5BCA02CD8F73F008B33F4 /* ApplicationImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FB5BC9F2CD8F73C008B33F4 /* ApplicationImage.swift */; };
 		2FF2E94E2E774B5B0093D72C /* NavigationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FF2E94D2E774B570093D72C /* NavigationManager.swift */; };
 		2FF2E9502E7808470093D72C /* AppImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FF2E94F2E7808420093D72C /* AppImageView.swift */; };
+		CC00A0020000000000000001 /* CopyCatPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00A0010000000000000001 /* CopyCatPanel.swift */; };
+		CC00B0020000000000000001 /* ClipCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00B0010000000000000001 /* ClipCard.swift */; };
+		CC00C0020000000000000001 /* OGFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00C0010000000000000001 /* OGFetcher.swift */; };
+		CC00J0020000000000000001 /* OGImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00J0010000000000000001 /* OGImageCache.swift */; };
+		CC00J0040000000000000001 /* ExportManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00J0030000000000000001 /* ExportManager.swift */; };
+		CC00D0020000000000000001 /* Color+Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00D0010000000000000001 /* Color+Hex.swift */; };
+		CC00E0020000000000000001 /* PinboardStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00E0010000000000000001 /* PinboardStore.swift */; };
+		CC00F0020000000000000001 /* PinboardEntryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00F0010000000000000001 /* PinboardEntryCard.swift */; };
+		CC00G0020000000000000001 /* NewPinboardSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00G0010000000000000001 /* NewPinboardSheet.swift */; };
+		CC00H0020000000000000001 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00H0010000000000000001 /* OnboardingView.swift */; };
+		CC00I0020000000000000001 /* ClipItemTransfer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00I0010000000000000001 /* ClipItemTransfer.swift */; };
 		4762D6972467226100B3A2BA /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 4762D6992467226100B3A2BA /* Localizable.strings */; };
 		DA009931256411F90030E697 /* appcast.xml in Resources */ = {isa = PBXBuildFile; fileRef = DA00992C256411F90030E697 /* appcast.xml */; };
 		DA009932256411F90030E697 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = DA00992D256411F90030E697 /* README.md */; };
@@ -204,6 +215,17 @@
 		2FB5BC9F2CD8F73C008B33F4 /* ApplicationImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationImage.swift; sourceTree = "<group>"; };
 		2FF2E94D2E774B570093D72C /* NavigationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationManager.swift; sourceTree = "<group>"; };
 		2FF2E94F2E7808420093D72C /* AppImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppImageView.swift; sourceTree = "<group>"; };
+		CC00A0010000000000000001 /* CopyCatPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CopyCatPanel.swift; sourceTree = "<group>"; };
+		CC00B0010000000000000001 /* ClipCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipCard.swift; sourceTree = "<group>"; };
+		CC00C0010000000000000001 /* OGFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OGFetcher.swift; sourceTree = "<group>"; };
+		CC00J0010000000000000001 /* OGImageCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OGImageCache.swift; sourceTree = "<group>"; };
+		CC00J0030000000000000001 /* ExportManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportManager.swift; sourceTree = "<group>"; };
+		CC00D0010000000000000001 /* Color+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Hex.swift"; sourceTree = "<group>"; };
+		CC00E0010000000000000001 /* PinboardStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinboardStore.swift; sourceTree = "<group>"; };
+		CC00F0010000000000000001 /* PinboardEntryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinboardEntryCard.swift; sourceTree = "<group>"; };
+		CC00G0010000000000000001 /* NewPinboardSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewPinboardSheet.swift; sourceTree = "<group>"; };
+		CC00H0010000000000000001 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		CC00I0010000000000000001 /* ClipItemTransfer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipItemTransfer.swift; sourceTree = "<group>"; };
 		2FFF8BCF2CE2116600235A78 /* Data+Encoding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Data+Encoding.swift"; sourceTree = "<group>"; };
 		3EBDD1E32BBEF22800C57500 /* nl */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = nl; path = nl.lproj/Localizable.strings; sourceTree = "<group>"; };
 		4762D6982467226100B3A2BA /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -528,7 +550,7 @@
 		DAB6266D2CAD7FCF001B720E /* lv */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = lv; path = lv.lproj/StorageSettings.strings; sourceTree = "<group>"; };
 		DAB6266E2CAD7FD6001B720E /* lv */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = lv; path = lv.lproj/PreviewItemView.strings; sourceTree = "<group>"; };
 		DAB6266F2CAD7FDA001B720E /* lv */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = lv; path = lv.lproj/Localizable.strings; sourceTree = "<group>"; };
-		DAB8CE4024E3677F00A2500E /* Maccy.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Maccy.entitlements; sourceTree = "<group>"; };
+		DAB8CE4024E3677F00A2500E /* CopyCat.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CopyCat.entitlements; sourceTree = "<group>"; };
 		DABDE97E2974706C005B32E9 /* KeyboardLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardLayout.swift; sourceTree = "<group>"; };
 		DAC14123232367B200FCFA30 /* Search.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Search.swift; sourceTree = "<group>"; };
 		DAC929D6297A0E8B00814F19 /* NSPasteboard.PasteboardType+Types.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NSPasteboard.PasteboardType+Types.swift"; sourceTree = "<group>"; };
@@ -617,6 +639,7 @@
 				DA181176247D14DA00066D55 /* Settings.PaneIdentifier+Panes.swift */,
 				DA9C3C462C20B91D0056795D /* String+Identifiable.swift */,
 				DAFE2DD9268A521A00990986 /* String+Shortened.swift */,
+				CC00D0010000000000000001 /* Color+Hex.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -634,6 +657,8 @@
 			children = (
 				DA05B5132C234DCF006980FE /* HistoryItem.swift */,
 				DA05B5122C234DCF006980FE /* HistoryItemContent.swift */,
+				CC00E0010000000000000001 /* PinboardStore.swift */,
+				CC00I0010000000000000001 /* ClipItemTransfer.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -671,6 +696,11 @@
 			children = (
 				2F1091D62F2B6E8100F5C454 /* AsyncView.swift */,
 				2FF2E94F2E7808420093D72C /* AppImageView.swift */,
+				CC00B0010000000000000001 /* ClipCard.swift */,
+				CC00A0010000000000000001 /* CopyCatPanel.swift */,
+				CC00F0010000000000000001 /* PinboardEntryCard.swift */,
+				CC00G0010000000000000001 /* NewPinboardSheet.swift */,
+				CC00H0010000000000000001 /* OnboardingView.swift */,
 				DAA072DE2C41C63C006DDFD2 /* ConfirmationView.swift */,
 				DA243D112C2F64820012A27F /* ContentView.swift */,
 				DAA072DC2C41C61F006DDFD2 /* FooterItemView.swift */,
@@ -726,6 +756,16 @@
 				DA360DB41E3DF137005C6F6B /* Info.plist */,
 			);
 			path = MaccyTests;
+			sourceTree = "<group>";
+		};
+		CC00C0050000000000000001 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				CC00C0010000000000000001 /* OGFetcher.swift */,
+				CC00J0010000000000000001 /* OGImageCache.swift */,
+				CC00J0030000000000000001 /* ExportManager.swift */,
+			);
+			path = Services;
 			sourceTree = "<group>";
 		};
 		DA3BCB902C3EEC1000B01BC1 /* Observables */ = {
@@ -808,6 +848,7 @@
 				DA68F91F28BD819E007E2F25 /* Intents */,
 				DA05B50F2C234C1C006980FE /* Models */,
 				DA3BCB902C3EEC1000B01BC1 /* Observables */,
+				CC00C0050000000000000001 /* Services */,
 				DA181178247D150B00066D55 /* Settings */,
 				DA21AD3C249E85BD003E7C98 /* Sounds */,
 				DA19690C2C3EEF9300258481 /* Views */,
@@ -838,7 +879,7 @@
 				DA696BCD240177E800DE80CF /* Sorter.swift */,
 				DA243D132C2F66DD0012A27F /* Storage.swift */,
 				DA81D673252A056B009977BC /* Throttler.swift */,
-				DAB8CE4024E3677F00A2500E /* Maccy.entitlements */,
+				DAB8CE4024E3677F00A2500E /* CopyCat.entitlements */,
 				DAEE384D1E3DBEB100DD2966 /* Info.plist */,
 				DA6373971E4AB9BB00263391 /* Assets.xcassets */,
 				4762D6992467226100B3A2BA /* Localizable.strings */,
@@ -862,8 +903,8 @@
 			dependencies = (
 				DA0EE7BC204657840025FC60 /* PBXTargetDependency */,
 			);
-			name = MaccyUITests;
-			productName = MaccyUITests;
+			name = CopyCatUITests;
+			productName = CopyCatUITests;
 			productReference = DA0EE7B6204657830025FC60 /* MaccyUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
@@ -880,8 +921,8 @@
 			dependencies = (
 				DA360DB61E3DF137005C6F6B /* PBXTargetDependency */,
 			);
-			name = MaccyTests;
-			productName = MaccyTests;
+			name = CopyCatTests;
+			productName = CopyCatTests;
 			productReference = DA360DB01E3DF137005C6F6B /* MaccyTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
@@ -910,7 +951,7 @@
 				DAC0CA3D2C88E7A4003BF498 /* Fuse */,
 				2F12271D2E5C932200A1592A /* Logging */,
 			);
-			productName = Maccy;
+			productName = "Copy Cat";
 			productReference = DAEE38431E3DBEB100DD2966 /* Maccy.app */;
 			productType = "com.apple.product-type.application";
 		};
@@ -1074,6 +1115,17 @@
 				DA19691C2C3F3EAC00258481 /* Collection+Surrounding.swift in Sources */,
 				DA1969142C3F11D600258481 /* PreviewItemView.swift in Sources */,
 				2FF2E9502E7808470093D72C /* AppImageView.swift in Sources */,
+				CC00A0020000000000000001 /* CopyCatPanel.swift in Sources */,
+				CC00B0020000000000000001 /* ClipCard.swift in Sources */,
+				CC00C0020000000000000001 /* OGFetcher.swift in Sources */,
+				CC00J0020000000000000001 /* OGImageCache.swift in Sources */,
+				CC00J0040000000000000001 /* ExportManager.swift in Sources */,
+				CC00D0020000000000000001 /* Color+Hex.swift in Sources */,
+				CC00E0020000000000000001 /* PinboardStore.swift in Sources */,
+				CC00I0020000000000000001 /* ClipItemTransfer.swift in Sources */,
+				CC00F0020000000000000001 /* PinboardEntryCard.swift in Sources */,
+				CC00G0020000000000000001 /* NewPinboardSheet.swift in Sources */,
+				CC00H0020000000000000001 /* OnboardingView.swift in Sources */,
 				DAA072D52C40AC52006DDFD2 /* HistoryListView.swift in Sources */,
 				2F578C422EFFE8920088B759 /* SlideoutContentView.swift in Sources */,
 				2F578C432EFFE8920088B759 /* SlideoutView.swift in Sources */,
@@ -1521,7 +1573,7 @@
 					"@loader_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				PRODUCT_BUNDLE_IDENTIFIER = org.p0deje.MaccyUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.copycat.app.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 5.0;
@@ -1548,7 +1600,7 @@
 					"@loader_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				PRODUCT_BUNDLE_IDENTIFIER = org.p0deje.MaccyUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.copycat.app.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 5.0;
@@ -1572,7 +1624,7 @@
 					"@loader_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				PRODUCT_BUNDLE_IDENTIFIER = org.p0deje.MaccyTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.copycat.app.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 5.0;
@@ -1596,7 +1648,7 @@
 					"@loader_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				PRODUCT_BUNDLE_IDENTIFIER = org.p0deje.MaccyTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.copycat.app.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 5.0;
@@ -1729,7 +1781,7 @@
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = Maccy/Maccy.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Maccy/CopyCat.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
@@ -1750,8 +1802,8 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 2.6.1;
-				PRODUCT_BUNDLE_IDENTIFIER = org.p0deje.Maccy;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.copycat.app;
+				PRODUCT_NAME = "Copy Cat";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -1764,7 +1816,7 @@
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = Maccy/Maccy.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Maccy/CopyCat.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
@@ -1785,8 +1837,8 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 2.6.1;
-				PRODUCT_BUNDLE_IDENTIFIER = org.p0deje.Maccy;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.copycat.app;
+				PRODUCT_NAME = "Copy Cat";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 5.0;
 			};

@@ -5,11 +5,14 @@ import SwiftUI
 // https://stackoverflow.com/questions/46023769/how-to-show-a-window-without-stealing-focus-on-macos
 class FloatingPanel<Content: View>: NSPanel, NSWindowDelegate {
   var isPresented: Bool = false
+  /// When non-nil the panel is locked to this height (bottom-strip mode).
+  /// windowWillResize will enforce it and skip persisting window size.
+  private var fixedHeight: CGFloat?
   var statusBarButton: NSStatusBarButton?
   let onClose: () -> Void
 
   override var isMovable: Bool {
-    get { Defaults[.popupPosition] != .statusItem }
+    get { false }
     set {}
   }
 
@@ -24,7 +27,7 @@ class FloatingPanel<Content: View>: NSPanel, NSWindowDelegate {
 
     super.init(
         contentRect: contentRect,
-        styleMask: [.nonactivatingPanel, .resizable, .closable, .fullSizeContentView],
+        styleMask: [.nonactivatingPanel, .fullSizeContentView],
         backing: .buffered,
         defer: false
     )
@@ -51,7 +54,7 @@ class FloatingPanel<Content: View>: NSPanel, NSWindowDelegate {
     standardWindowButton(.miniaturizeButton)?.isHidden = true
     standardWindowButton(.zoomButton)?.isHidden = true
 
-    contentView = NSHostingView(
+    let hostingView = NSHostingView(
       rootView: view()
         // The safe area is ignored because the title bar still interferes with the geometry
         .ignoresSafeArea()
@@ -60,7 +63,14 @@ class FloatingPanel<Content: View>: NSPanel, NSWindowDelegate {
             self.saveWindowPosition()
         })
     )
-    contentView?.layer?.cornerRadius = Popup.cornerRadius + Popup.horizontalPadding
+    // Prevent the hosting view from resizing the window when SwiftUI content changes
+    // (e.g. pinning items triggers layout recalculation that would collapse the panel)
+    if #available(macOS 13.0, *) {
+      hostingView.sizingOptions = []
+    }
+    contentView = hostingView
+    contentView?.layer?.cornerRadius = 0
+    contentView?.layer?.maskedCorners = []
   }
 
   func toggle(height: CGFloat, at popupPosition: PopupPosition = Defaults[.popupPosition]) {
@@ -72,30 +82,21 @@ class FloatingPanel<Content: View>: NSPanel, NSWindowDelegate {
   }
 
   func open(height: CGFloat, at popupPosition: PopupPosition = Defaults[.popupPosition]) {
-    let size = Defaults[.windowSize]
-    setContentSize(NSSize(width: min(frame.width, size.width), height: min(height, size.height)))
-    setFrameOrigin(popupPosition.origin(size: frame.size, statusBarButton: statusBarButton))
+    guard let screen = NSScreen.main ?? NSScreen.screens.first else { return }
+    let panelHeight: CGFloat = 270
+    fixedHeight = panelHeight
+    setContentSize(NSSize(width: screen.frame.width, height: panelHeight))
+    // Lock height so SwiftUI layout changes (e.g. pinning) cannot collapse the panel
+    minSize = NSSize(width: 300, height: panelHeight)
+    maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: panelHeight)
+    setFrameOrigin(NSPoint(x: screen.frame.minX, y: screen.frame.minY))
     orderFrontRegardless()
     makeKey()
     isPresented = true
-
-    if popupPosition == .statusItem {
-      DispatchQueue.main.async {
-        self.statusBarButton?.isHighlighted = true
-      }
-    }
   }
 
   func verticallyResize(to newHeight: CGFloat) {
-    var newSize = frame.size
-    newSize.height = newHeight
-    var newOrigin = frame.origin
-    newOrigin.y += (frame.height - newSize.height)
-
-    NSAnimationContext.runAnimationGroup { (context) in
-      context.duration = 0.2
-      animator().setFrame(NSRect(origin: newOrigin, size: newSize), display: true)
-    }
+    return
   }
 
   func determinePreviewPlacement() {
@@ -122,6 +123,12 @@ class FloatingPanel<Content: View>: NSPanel, NSWindowDelegate {
   }
 
   func windowWillResize(_ sender: NSWindow, to frameSize: NSSize) -> NSSize {
+    // Bottom-strip mode: height is locked. Return immediately without saving
+    // to Defaults[.windowSize] — that would corrupt Popup.resize() calculations.
+    if let fixedHeight {
+      return NSSize(width: frameSize.width, height: fixedHeight)
+    }
+
     let preview = AppState.shared.preview
 
     if inLiveResize && preview.resizingMode == .none {

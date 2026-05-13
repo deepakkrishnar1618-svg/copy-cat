@@ -13,7 +13,7 @@ struct StorageType {
 extension Defaults.Keys {
   static let clearOnQuit = Key<Bool>("clearOnQuit", default: false)
   static let clearSystemClipboard = Key<Bool>("clearSystemClipboard", default: false)
-  static let clipboardCheckInterval = Key<Double>("clipboardCheckInterval", default: 0.5)
+  static let clipboardCheckInterval = Key<Double>("clipboardCheckInterval", default: 1.0)
   static let enabledPasteboardTypes = Key<Set<NSPasteboard.PasteboardType>>(
     "enabledPasteboardTypes", default: Set(StorageType.all.types)
   )
@@ -22,7 +22,12 @@ extension Defaults.Keys {
   static let ignoreEvents = Key<Bool>("ignoreEvents", default: false)
   static let ignoreOnlyNextEvent = Key<Bool>("ignoreOnlyNextEvent", default: false)
   static let ignoreRegexp = Key<[String]>("ignoreRegexp", default: [])
-  static let ignoredApps = Key<[String]>("ignoredApps", default: [])
+  static let ignoredApps = Key<[String]>("ignoredApps", default: [
+    "com.1password.1password",        // 1Password 8
+    "com.agilebits.onepassword7-osx", // 1Password 7
+    "com.apple.keychainaccess",       // macOS Keychain Access
+    "com.bitwarden.desktop"           // Bitwarden
+  ])
   static let ignoredPasteboardTypes = Key<Set<String>>(
     "ignoredPasteboardTypes",
     default: Set([

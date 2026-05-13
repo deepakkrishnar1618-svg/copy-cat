@@ -145,59 +145,9 @@ class SlideoutController {
   }
 
   func togglePreview(trigger: SlideoutToggleTrigger = .manual) {
-    if !state.isOpen {
-      let navigator = AppState.shared.navigator
-      guard navigator.leadHistoryItem != nil || navigator.pasteStackSelected else { return }
-    }
-
-    if trigger == .manual {
-      if state.isOpen {
-        autoOpenSuppressed = true
-      } else {
-        autoOpenSuppressed = false
-      }
-    }
-
-    cancelAutoOpen()
-    withAnimation(.easeInOut(duration: Self.animationDuration), completionCriteria: .removed) {
-      if let window = nswindow {
-        togglePreviewStateWithAnimation(windowFrame: window.frame)
-        var newSize = window.frame.size
-        newSize.width = contentWidth
-        newSize = computeSizeWithPreview(newSize, state: self.state)
-        if state.isOpen {
-          placement = computePlacement(window: window, for: newSize)
-        }
-
-        let expectedAnimationState = state
-        NSAnimationContext.runAnimationGroup { (context) in
-          var newOrigin = windowAnimationOrigin ?? window.frame.origin
-          newOrigin.y += (window.frame.height - newSize.height)
-
-          if placement == .left {
-            if windowAnimationOriginBaseState == .closed && state.isOpen {
-              newOrigin.x -= slideoutWidth
-            } else if windowAnimationOriginBaseState == .open
-              && !state.isOpen {
-              newOrigin.x += slideoutWidth
-            }
-            // Otherwise the base is the desired position
-          }
-          context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-          context.completionHandler = {
-            if self.state == expectedAnimationState {
-              self.state = expectedAnimationState.animationDone()
-            }
-          }
-          context.duration = Self.animationDuration
-          window.animator().setFrame(
-            NSRect(origin: newOrigin, size: newSize),
-            display: true
-          )
-        }
-      }
-    } completion: {
-    }
+    // Copy Cat uses a fixed bottom strip and does not use the slideout preview.
+    // Return immediately to prevent `setFrame` from collapsing the panel height.
+    return
   }
 
   func startResize(mode: ResizingMode) {

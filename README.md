@@ -1,169 +1,123 @@
+<div align="center">
+  <img width="128" src="assets/icon.png" alt="Copy Cat" />
 
-<img width="128px" src="https://maccy.app/img/maccy/Logo.png" alt="Logo" />
+  # Copy Cat
 
-# [Maccy](https://maccy.app)
+  **A visual redesign of Maccy — the clipboard manager you already love.**
 
-[![Downloads](https://img.shields.io/github/downloads/p0deje/Maccy/total.svg)](https://github.com/p0deje/Maccy/releases/latest)
-[![Build Status](https://img.shields.io/bitrise/716921b669780314/master?token=3pMiCb5dpFzlO-7jTYtO3Q)](https://app.bitrise.io/app/716921b669780314)
+  [![macOS](https://img.shields.io/badge/macOS-14%2B-black?logo=apple&logoColor=white)](https://www.apple.com/macos/)
+  [![License](https://img.shields.io/badge/license-MIT-orange)](LICENSE)
+  [![Based on Maccy](https://img.shields.io/badge/based%20on-Maccy-blue)](https://github.com/p0deje/Maccy)
 
-Maccy is a lightweight clipboard manager for macOS. It keeps the history of what you copy
-and lets you quickly navigate, search, and use previous clipboard contents.
+</div>
 
-Maccy works on macOS Sonoma 14 or higher.
+---
 
-<!-- vim-markdown-toc GFM -->
+Copy Cat is a fork of [Maccy](https://github.com/p0deje/Maccy) rebuilt with a **visual card-based panel**, pinboards, link previews, and export — while keeping the same lightweight, privacy-first philosophy and zero cloud dependency.
 
-* [Features](#features)
-* [Install](#install)
-* [Usage](#usage)
-* [Advanced](#advanced)
-  * [Ignore Copied Items](#ignore-copied-items)
-  * [Ignore Custom Copy Types](#ignore-custom-copy-types)
-  * [Speed up Clipboard Check Interval](#speed-up-clipboard-check-interval)
-* [FAQ](#faq)
-  * [Why doesn't it paste when I select an item in history?](#why-doesnt-it-paste-when-i-select-an-item-in-history)
-  * [When assigning a hotkey to open Maccy, it says that this hotkey is already used in some system setting.](#when-assigning-a-hotkey-to-open-maccy-it-says-that-this-hotkey-is-already-used-in-some-system-setting)
-  * [How to restore hidden footer?](#how-to-restore-hidden-footer)
-  * [How to ignore copies from Universal Clipboard?](#how-to-ignore-copies-from-universal-clipboard)
-  * [My keyboard shortcut stopped working in password fields. How do I fix this?](#my-keyboard-shortcut-stopped-working-in-password-fields-how-do-i-fix-this)
-* [Translations](#translations)
-* [Motivation](#motivation)
-* [License](#license)
+---
 
-<!-- vim-markdown-toc -->
+## What's New vs Maccy
+
+| | Maccy | Copy Cat |
+|---|:---:|:---:|
+| UI | Text list | Visual card strip |
+| Link previews | — | OG thumbnail + title |
+| Pinboards | — | Named, colour-coded boards |
+| Pin items inside pinboards | — | ✓ |
+| Excluded apps UI | Settings only | Searchable toggle list |
+| Export | — | CSV (.zip) + PDF |
+| App-branded card headers | — | Brand colour per app |
+| Core clipboard engine | ✓ | Same — NSPasteboard |
+| Global hotkey | ✓ | Same — configurable |
+
+---
 
 ## Features
 
-* Lightweight and fast
-* Keyboard-first
-* Secure and private
-* Native UI
-* Open source and free
+- **Visual card strip** — every clipboard item is a 160×180 card showing the source app icon, content type badge (TEXT / LINK / IMAGE / FILE), and a live content preview
+- **OG link thumbnails** — URL cards automatically fetch Open Graph images and titles; results are cached to disk so subsequent opens are instant with no network hit
+- **Pinboards** — create named boards with custom colours; drag cards from the clipboard strip onto any board tab; pin items within a board to keep them at the front
+- **Excluded apps** — searchable toggle list of all installed apps; toggling an app off hides its items from the clipboard (items are not deleted — re-enabling the app restores them instantly)
+- **Export** — export your full clipboard history and all pinboards as a CSV zip archive or a formatted PDF
+- **Menu bar popup** — click the status icon for one-click access to History Limit, Export CSV, Export PDF, and Excluded Apps
+- **Same storage, same shortcuts** — drop-in replacement for Maccy; all existing keyboard shortcuts and history are preserved
+
+---
+
+## Screenshots
+
+> Add screenshots of the running app here. Suggested shots:
+> 1. The card strip panel open over a browser
+> 2. A pinboard tab with a few cards
+> 3. The menu bar popup
+> 4. The Excluded Apps panel
+
+---
 
 ## Install
 
-Download the latest version from the [releases](https://github.com/p0deje/Maccy/releases/latest) page, or use [Homebrew](https://brew.sh/):
+### Option A — DMG (recommended)
+
+1. Download **CopyCat.dmg** from [**Releases →**](../../releases/latest)
+2. Open the DMG and drag **Copy Cat** to your **Applications** folder
+3. Launch Copy Cat from Applications
+4. On first run, grant **Accessibility permission** when prompted *(required for auto-paste)*
+
+> **First-launch Gatekeeper notice:** Copy Cat is not notarized. On the first open, **right-click → Open** to bypass the "unidentified developer" warning. This is a one-time step.
+
+### Option B — Build from source
 
 ```sh
-brew install maccy
+git clone https://github.com/deepakkrishnar1618-svg/copy-cat.git
+cd copy-cat
+bash scripts/make-dmg.sh
 ```
+
+Requires Xcode 16+ and macOS 14+.
+
+---
 
 ## Usage
 
-1. <kbd>SHIFT (⇧)</kbd> + <kbd>COMMAND (⌘)</kbd> + <kbd>C</kbd> to popup Maccy or click on its icon in the menu bar.
-2. Type what you want to find.
-3. To select the history item you wish to copy, press <kbd>ENTER</kbd>, or click the item, or use <kbd>COMMAND (⌘)</kbd> + `n` shortcut.
-4. To choose the history item and paste, press <kbd>OPTION (⌥)</kbd> + <kbd>ENTER</kbd>, or <kbd>OPTION (⌥)</kbd> + <kbd>CLICK</kbd> the item, or use <kbd>OPTION (⌥)</kbd> + `n` shortcut.
-5. To choose the history item and paste without formatting, press <kbd>OPTION (⌥)</kbd> + <kbd>SHIFT (⇧)</kbd> + <kbd>ENTER</kbd>, or <kbd>OPTION (⌥)</kbd> + <kbd>SHIFT (⇧)</kbd> + <kbd>CLICK</kbd> the item, or use <kbd>OPTION (⌥)</kbd> + <kbd>SHIFT (⇧)</kbd> + `n` shortcut.
-6. To delete the history item, press <kbd>OPTION (⌥)</kbd> + <kbd>DELETE (⌫)</kbd>.
-7. To see the full text of the history item, wait a couple of seconds for tooltip.
-8. To pin the history item so that it remains on top of the list, press <kbd>OPTION (⌥)</kbd> + <kbd>P</kbd>. The item will be moved to the top with a random but permanent keyboard shortcut. To unpin it, press <kbd>OPTION (⌥)</kbd> + <kbd>P</kbd> again.
-9. To clear all unpinned items, select _Clear_ in the menu, or press <kbd>OPTION (⌥)</kbd> + <kbd>COMMAND (⌘)</kbd> + <kbd>DELETE (⌫)</kbd>. To clear all items including pinned, select _Clear_ in the menu with  <kbd>OPTION (⌥)</kbd> pressed, or press <kbd>SHIFT (⇧)</kbd> + <kbd>OPTION (⌥)</kbd> + <kbd>COMMAND (⌘)</kbd> + <kbd>DELETE (⌫)</kbd>.
-10. To disable Maccy and ignore new copies, click on the menu icon with <kbd>OPTION (⌥)</kbd> pressed.
-11. To ignore only the next copy, click on the menu icon with <kbd>OPTION (⌥)</kbd> + <kbd>SHIFT (⇧)</kbd> pressed.
-12. To customize the behavior, check "Preferences…" window, or press <kbd>COMMAND (⌘)</kbd> + <kbd>,</kbd>.
+| Action | How |
+|---|---|
+| Open clipboard panel | Click status bar icon → **Open Clipboard** |
+| Search across everything | Type in the search bar (filters clipboard + all pinboards) |
+| Paste an item | Click any card — panel closes and item pastes automatically |
+| Pin / unpin | Hover a card and click the **pin icon**, or right-click → Pin |
+| Create a pinboard | Click **+** in the toolbar |
+| Move a card to a pinboard | Drag card onto a pinboard tab |
+| Excluded apps | Status bar icon → **Excluded Apps…** |
+| Export history | Status bar icon → **Export CSV (.zip)…** or **Export PDF…** |
+| History limit | Status bar icon → change the **History Limit** field |
 
-## Advanced
+---
 
-### Ignore Copied Items
+## Requirements
 
-You can tell Maccy to ignore all copied items:
+- macOS Sonoma 14 or higher
+- Accessibility permission (System Settings → Privacy & Security → Accessibility)
 
-```sh
-defaults write org.p0deje.Maccy ignoreEvents true # default is false
-```
+---
 
-This is useful if you have some workflow for copying sensitive data. You can set `ignoreEvents` to true, copy the data and set `ignoreEvents` back to false.
-
-You can also click the menu icon with <kbd>OPTION (⌥)</kbd> pressed. To ignore only the next copy, click with <kbd>OPTION (⌥)</kbd> + <kbd>SHIFT (⇧)</kbd> pressed.
-
-### Ignore Custom Copy Types
-
-By default Maccy will ignore certain copy types that are considered to be confidential
-or temporary. The default list always include the following types:
-
-* `org.nspasteboard.TransientType`
-* `org.nspasteboard.ConcealedType`
-* `org.nspasteboard.AutoGeneratedType`
-
-Also, default configuration includes the following types but they can be removed
-or overwritten:
-
-* `com.agilebits.onepassword`
-* `com.typeit4me.clipping`
-* `de.petermaurer.TransientPasteboardType`
-* `Pasteboard generator type`
-* `net.antelle.keeweb`
-
-You can add additional custom types using settings.
-To find what custom types are used by an application, you can use
-free application [Pasteboard-Viewer](https://github.com/sindresorhus/Pasteboard-Viewer).
-Simply download the application, open it, copy something from the application you
-want to ignore and look for any custom types in the left sidebar. [Here is an example
-of using this approach to ignore Adobe InDesign](https://github.com/p0deje/Maccy/issues/125).
-
-### Speed up Clipboard Check Interval
-
-By default, Maccy checks clipboard every 500 ms, which should be enough for most users. If you want
-to speed it up, you can change it with `defaults`:
+## Building the DMG
 
 ```sh
-defaults write org.p0deje.Maccy clipboardCheckInterval 0.1 # 100 ms
+bash scripts/make-dmg.sh
 ```
 
-## FAQ
+This builds a Release configuration, stages the `.app` with an `/Applications` symlink, and outputs `CopyCat-2.6.1.dmg` in the project root.
 
-### Why doesn't it paste when I select an item in history?
+---
 
-1. Make sure you have "Paste automatically" enabled in Preferences.
-2. Make sure "Maccy" is added to System Settings -> Privacy & Security -> Accessibility.
+## Attribution
 
-### When assigning a hotkey to open Maccy, it says that this hotkey is already used in some system setting.
+Copy Cat is a fork of [Maccy](https://github.com/p0deje/Maccy) by [@p0deje](https://github.com/p0deje).  
+The core clipboard engine, keyboard shortcut system, Sparkle updater, and settings infrastructure come from the original project. New UI, pinboards, OG thumbnails, export, and excluded-apps panel are original additions.
 
-1. Open System settings -> Keyboard -> Keyboard Shortcuts.
-2. Find where that hotkey is used. For example, "Convert text to simplified Chinese" is under Services -> Text.
-3. Disable that hotkey or remove assigned combination ([screenshot](https://github.com/p0deje/Maccy/assets/576152/446719e6-c3e5-4eb0-95fb-5a811066487f)).
-4. Restart Maccy.
-5. Assign hotkey in Maccy settings.
-
-### How to restore hidden footer?
-
-1. Open Maccy window.
-2. Press <kbd>COMMAND (⌘)</kbd> + <kbd>,</kbd> to open preferences.
-3. Enable footer in Appearance section.
-
-If for some reason it doesn't work, run the following command in Terminal.app:
-
-```sh
-defaults write org.p0deje.Maccy showFooter 1
-```
-
-### How to ignore copies from [Universal Clipboard](https://support.apple.com/en-us/102430)?
-
-1. Open Preferences -> Ignore -> Pasteboard Types.
-2. Add `com.apple.is-remote-clipboard`.
-
-### My keyboard shortcut stopped working in password fields. How do I fix this?
-
-If your shortcut produces a character (like `Option+C` → "ç"), macOS security may block it in password fields. Use [Karabiner-Elements](https://karabiner-elements.pqrs.org/) to remap your shortcut to a different combination like `Cmd+Shift+C`. [See detailed solution](docs/keyboard-shortcut-password-fields.md).
-
-## Translations
-
-The translations are hosted in [Weblate](https://hosted.weblate.org/engage/maccy/).
-You can use it to suggest changes in translations and localize the application to a new language.
-
-[![Translation status](https://hosted.weblate.org/widget/maccy/multi-auto.svg)](https://hosted.weblate.org/engage/maccy/)
-
-## Motivation
-
-There are dozens of similar applications out there, so why build another?
-Over the past years since I moved from Linux to macOS, I struggled to find
-a clipboard manager that is as free and simple as [Parcellite](http://parcellite.sourceforge.net),
-but I couldn't. So I've decided to build one.
-
-Also, I wanted to learn Swift and get acquainted with macOS application development.
-
+---
 
 ## License
 
-[MIT](./LICENSE)
+MIT — see [LICENSE](LICENSE)

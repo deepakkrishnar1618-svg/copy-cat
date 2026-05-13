@@ -1,4 +1,5 @@
-import AppKit.NSWorkspace
+import AppKit
+import SwiftUI
 import Defaults
 import Foundation
 import Observation
@@ -25,17 +26,129 @@ class HistoryItemDecorator: Identifiable, Hashable, HasVisibility {
   }
   var shortcuts: [KeyShortcut] = []
 
+  struct AppDesign {
+    let color: SwiftUI.Color
+    let iconName: String
+    let useSystemIcon: Bool // true = render the real macOS app icon instead of SF Symbol
+    
+    static func design(for appName: String?) -> AppDesign {
+      switch (appName ?? "").lowercased() {
+      case "youtube": return AppDesign(color: SwiftUI.Color(red: 1.0, green: 0.0, blue: 0.0), iconName: "play.rectangle.fill", useSystemIcon: false)
+      case "google maps": return AppDesign(color: SwiftUI.Color(red: 0.2, green: 0.65, blue: 0.33), iconName: "map.fill", useSystemIcon: false)
+      case "gmail": return AppDesign(color: SwiftUI.Color(red: 0.91, green: 0.26, blue: 0.21), iconName: "envelope.fill", useSystemIcon: false)
+      case "google drive": return AppDesign(color: SwiftUI.Color(red: 0.2, green: 0.65, blue: 0.33), iconName: "externaldrive.fill", useSystemIcon: false)
+      case "google docs": return AppDesign(color: SwiftUI.Color(red: 0.26, green: 0.52, blue: 0.96), iconName: "doc.text.fill", useSystemIcon: false)
+      case "github": return AppDesign(color: SwiftUI.Color(red: 0.14, green: 0.16, blue: 0.18), iconName: "curlybraces.square.fill", useSystemIcon: false)
+      case "x (twitter)", "x": return AppDesign(color: SwiftUI.Color(white: 0.1), iconName: "xmark", useSystemIcon: false)
+      case "linkedin": return AppDesign(color: SwiftUI.Color(red: 0.0, green: 0.46, blue: 0.71), iconName: "person.crop.circle.fill", useSystemIcon: false)
+      case "notion": return AppDesign(color: SwiftUI.Color(white: 0.2), iconName: "note.text", useSystemIcon: false)
+      case "figma": return AppDesign(color: SwiftUI.Color(red: 0.95, green: 0.3, blue: 0.1), iconName: "f.circle.fill", useSystemIcon: false)
+      case "slack": return AppDesign(color: SwiftUI.Color(red: 0.29, green: 0.1, blue: 0.29), iconName: "number", useSystemIcon: false)
+      case "linear": return AppDesign(color: SwiftUI.Color(red: 0.36, green: 0.38, blue: 0.96), iconName: "arrow.up.right.circle.fill", useSystemIcon: false)
+      case "chatgpt": return AppDesign(color: SwiftUI.Color(red: 0.06, green: 0.65, blue: 0.5), iconName: "waveform.circle.fill", useSystemIcon: false)
+      case "claude": return AppDesign(color: SwiftUI.Color(red: 0.84, green: 0.61, blue: 0.48), iconName: "sparkles", useSystemIcon: false)
+      case "reddit": return AppDesign(color: SwiftUI.Color(red: 1.0, green: 0.27, blue: 0.0), iconName: "bubble.left.and.bubble.right.fill", useSystemIcon: false)
+      case "netflix": return AppDesign(color: SwiftUI.Color(red: 0.89, green: 0.04, blue: 0.08), iconName: "play.tv.fill", useSystemIcon: false)
+      case "amazon": return AppDesign(color: SwiftUI.Color(red: 1.0, green: 0.6, blue: 0.0), iconName: "cart.fill", useSystemIcon: false)
+      case "spotify": return AppDesign(color: SwiftUI.Color(red: 0.12, green: 0.84, blue: 0.38), iconName: "music.note", useSystemIcon: false)
+      case "instagram": return AppDesign(color: SwiftUI.Color(red: 0.89, green: 0.26, blue: 0.4), iconName: "camera.fill", useSystemIcon: false)
+      case "facebook": return AppDesign(color: SwiftUI.Color(red: 0.09, green: 0.46, blue: 0.95), iconName: "f.square.fill", useSystemIcon: false)
+      case "tiktok": return AppDesign(color: SwiftUI.Color.black, iconName: "music.note", useSystemIcon: false)
+      default: return AppDesign(color: SwiftUI.Color(red: 0.22, green: 0.22, blue: 0.22), iconName: "app.fill", useSystemIcon: true)
+      }
+    }
+  }
+
+  struct AppNameParser {
+    static func parse(text: String?) -> String? {
+      guard let rawText = text else { return nil }
+      let textToParse = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
+      
+      guard textToParse.hasPrefix("http://") || textToParse.hasPrefix("https://"),
+            let url = URL(string: textToParse),
+            let host = url.host?.lowercased() else {
+        return nil
+      }
+      
+      let knownDomains: [String: String] = [
+        "youtube.com": "YouTube",
+        "youtu.be": "YouTube",
+        "maps.google.com": "Google Maps",
+        "goo.gl": "Google Maps", // mostly used for maps nowadays
+        "mail.google.com": "Gmail",
+        "drive.google.com": "Google Drive",
+        "docs.google.com": "Google Docs",
+        "github.com": "GitHub",
+        "twitter.com": "X (Twitter)",
+        "x.com": "X (Twitter)",
+        "t.co": "X (Twitter)",
+        "linkedin.com": "LinkedIn",
+        "notion.so": "Notion",
+        "notion.site": "Notion",
+        "figma.com": "Figma",
+        "slack.com": "Slack",
+        "linear.app": "Linear",
+        "chatgpt.com": "ChatGPT",
+        "chat.openai.com": "ChatGPT",
+        "claude.ai": "Claude",
+        "reddit.com": "Reddit",
+        "netflix.com": "Netflix",
+        "amazon.com": "Amazon",
+        "amzn.to": "Amazon",
+        "open.spotify.com": "Spotify",
+        "spotify.link": "Spotify",
+        "instagram.com": "Instagram",
+        "ig.me": "Instagram",
+        "facebook.com": "Facebook",
+        "fb.me": "Facebook",
+        "tiktok.com": "TikTok"
+      ]
+      
+      for (domain, appName) in knownDomains {
+        if host == domain || host.hasSuffix("." + domain) {
+          return appName
+        }
+      }
+      
+      var domainParts = host.replacingOccurrences(of: "www.", with: "").split(separator: ".")
+      if domainParts.count >= 2 {
+        domainParts.removeLast() // remove TLD
+        if let last = domainParts.last, (last == "co" || last == "com" || last == "org" || last == "net" || last == "gov" || last == "edu"), domainParts.count >= 2 {
+            domainParts.removeLast()
+        }
+        if let name = domainParts.last, name.count > 1 {
+            return String(name).capitalized
+        }
+      }
+      return nil
+    }
+  }
+
+  @ObservationIgnored private var _applicationName: String? = nil
+  @ObservationIgnored private var _applicationNameCached = false
+
   var application: String? {
+    if _applicationNameCached { return _applicationName }
+    _applicationName = resolveApplicationName()
+    _applicationNameCached = true
+    return _applicationName
+  }
+
+  private func resolveApplicationName() -> String? {
+    if let parsedName = AppNameParser.parse(text: item.text) {
+      return parsedName
+    }
+    if let sourceURL = item.sourceURL, let parsedName = AppNameParser.parse(text: sourceURL) {
+      return parsedName
+    }
     if item.universalClipboard {
       return "iCloud"
     }
-
     guard let bundle = item.application,
       let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundle)
     else {
       return nil
     }
-
     return url.deletingPathExtension().lastPathComponent
   }
 

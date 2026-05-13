@@ -3,3 +3,13 @@ Maccy.xcodeproj/project.xcworkspace/xcshareddata
 .idea
 .DS_Store
 Maccy/.DS_Store
+
+# Build output
+build/
+
+# Generated DMG files
+*.dmg
+
+# Scratch / test files
+pasteboard_test.swift
+test_url.swift

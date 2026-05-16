@@ -12,7 +12,7 @@ class Clipboard {
 
   private let pasteboard = NSPasteboard.general
 
-  private var timer: Timer?
+  private var timerSource: DispatchSourceTimer?
 
   private let dynamicTypePrefix = "dyn."
   private let microsoftSourcePrefix = "com.microsoft.ole.source."
@@ -37,6 +37,9 @@ class Clipboard {
 
   init() {
     changeCount = pasteboard.changeCount
+    let nc = NSWorkspace.shared.notificationCenter
+    nc.addObserver(self, selector: #selector(screenDidSleep), name: NSWorkspace.screensDidSleepNotification, object: nil)
+    nc.addObserver(self, selector: #selector(screenDidWake), name: NSWorkspace.screensDidWakeNotification, object: nil)
   }
 
   func onNewCopy(_ hook: @escaping OnNewCopyHook) {
@@ -48,17 +51,31 @@ class Clipboard {
   }
 
   func start() {
-    timer = Timer.scheduledTimer(
-      timeInterval: Defaults[.clipboardCheckInterval],
-      target: self,
-      selector: #selector(checkForChangesInPasteboard),
-      userInfo: nil,
-      repeats: true
-    )
+    let interval = Defaults[.clipboardCheckInterval]
+    // Use a background-QoS DispatchSourceTimer with 500ms leeway so macOS can
+    // coalesce this wakeup with other low-priority timers instead of firing exactly.
+    let source = DispatchSource.makeTimerSource(queue: DispatchQueue.global(qos: .background))
+    source.schedule(deadline: .now() + interval, repeating: interval, leeway: .milliseconds(500))
+    source.setEventHandler { [weak self] in
+      DispatchQueue.main.async { self?.checkForChangesInPasteboard() }
+    }
+    source.activate()
+    timerSource = source
   }
 
   func restart() {
-    timer?.invalidate()
+    timerSource?.cancel()
+    timerSource = nil
+    start()
+  }
+
+  @objc private func screenDidSleep() {
+    timerSource?.cancel()
+    timerSource = nil
+  }
+
+  @objc private func screenDidWake() {
+    guard timerSource == nil else { return }
     start()
   }
 

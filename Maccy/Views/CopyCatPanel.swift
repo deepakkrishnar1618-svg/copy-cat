@@ -25,7 +25,7 @@ private struct TabChip: View {
         Text(label)
           .font(.system(size: 11, weight: isSelected ? .semibold : .regular))
           .foregroundStyle(isSelected
-            ? Color(red: 0.90, green: 0.89, blue: 0.88) // on-surface
+            ? Color(red: 0.90, green: 0.89, blue: 0.88)
             : Color(red: 0.90, green: 0.89, blue: 0.88).opacity(0.6))
       }
       .padding(.horizontal, 10)
@@ -73,6 +73,17 @@ private struct PinboardSearchResult: Identifiable {
   var id: UUID { board.id }
 }
 
+// MARK: - CustomDragState
+struct CustomDragState {
+  var id: UUID
+  var decorator: HistoryItemDecorator?
+  var entry: PinboardEntry?
+  var pinboard: PinboardModel?
+  var location: CGPoint = .zero      // current cursor position (global)
+  var startCursor: CGPoint = .zero   // cursor position at drag start (global)
+  var grabOffset: CGSize = .zero     // card center - startCursor (constant after init)
+}
+
 // MARK: - CopyCatPanel
 struct CopyCatPanel: View {
   let appState = AppState.shared
@@ -81,6 +92,21 @@ struct CopyCatPanel: View {
   @State private var searchText = ""
   @State private var showNewPinboard = false
   @State private var dropTargetPinboard: PinboardModel? = nil
+  @State private var isClipboardDropTarget = false
+  @State private var showRenamePinboard = false
+  @State private var dragState: CustomDragState?
+  @State private var reorderDropIndex: Int? = nil
+  @State private var shiftedCardIDs: Set<UUID> = []
+  @State private var showPinnedEndGap: Bool = false
+  @State private var ghostSnapX: CGFloat? = nil
+  @State private var isPinToggleDrop = false
+  @State private var tabChipFrames: [String: CGRect] = [:]
+  @State private var cardFrames: [UUID: CGRect] = [:]
+  @State private var separatorFrames: [String: CGRect] = [:]
+  @State private var pinboardToRename: PinboardModel? = nil
+  @State private var newPinboardName = ""
+  @State private var showDeletePinboardConfirmation = false
+  @State private var pinboardToDelete: PinboardModel? = nil
   @Default(.ignoredApps) private var ignoredApps
 
   private var visibleHistory: [HistoryItemDecorator] {
@@ -103,13 +129,15 @@ struct CopyCatPanel: View {
     searchText.isEmpty ? recentItems : recentItems.filter { matches($0) }
   }
   private func matches(_ d: HistoryItemDecorator) -> Bool {
+    (d.item.customTitle ?? "").localizedCaseInsensitiveContains(searchText) ||
     (d.item.text ?? "").localizedCaseInsensitiveContains(searchText) ||
     (d.application ?? "").localizedCaseInsensitiveContains(searchText) ||
     (d.title).localizedCaseInsensitiveContains(searchText)
   }
   private func matchesPinboardEntry(_ entry: PinboardEntry) -> Bool {
     let parsedSite = HistoryItemDecorator.AppNameParser.parse(text: entry.text) ?? ""
-    return (entry.text ?? "").localizedCaseInsensitiveContains(searchText) ||
+    return (entry.customTitle ?? "").localizedCaseInsensitiveContains(searchText) ||
+           (entry.text ?? "").localizedCaseInsensitiveContains(searchText) ||
            (entry.applicationName ?? "").localizedCaseInsensitiveContains(searchText) ||
            parsedSite.localizedCaseInsensitiveContains(searchText) ||
            (entry.fileURLStrings ?? []).joined(separator: " ").localizedCaseInsensitiveContains(searchText)
@@ -140,6 +168,57 @@ struct CopyCatPanel: View {
     }
     // Exact fixed frame — matches panel height set in FloatingPanel.open()
     .frame(maxWidth: .infinity, maxHeight: .infinity)
+    // Drag overlay — position derived from cursor directly, no dictionary reads during drag
+    .overlay {
+      if let state = dragState {
+        let ghostX = state.location.x + state.grabOffset.width
+        let ghostY = state.location.y + state.grabOffset.height
+        let tilt = Double(state.location.x - state.startCursor.x) / 25
+
+        Group {
+          if let dec = state.decorator {
+            ClipCard(decorator: dec)
+          } else if let entry = state.entry, let pb = state.pinboard {
+            PinboardEntryCard(entry: entry, pinboard: pb)
+          }
+        }
+        .frame(width: 160, height: 180)
+        .overlay(
+          RoundedRectangle(cornerRadius: 12)
+            .stroke(Color(red: 0.94, green: 0.34, blue: 0.15), lineWidth: 1.5)
+        )
+        .position(x: ghostX, y: ghostY)
+        .allowsHitTesting(false)
+        .shadow(color: .black.opacity(0.6), radius: 20, y: 15)
+        .rotation3DEffect(.degrees(tilt), axis: (x: 0, y: 1, z: 0))
+        .scaleEffect(1.05)
+      }
+    }
+    // Drop target label — floats above ghost card, animates in/out when target changes
+    .overlay {
+      if let state = dragState {
+        let ghostX = state.location.x + state.grabOffset.width
+        let ghostY = state.location.y + state.grabOffset.height
+        let targetName: String? = dropTargetPinboard.map(\.name) ?? (isClipboardDropTarget ? "Clipboard" : nil)
+
+        Group {
+          if let name = targetName {
+            Text(name == "Clipboard" ? "Move to Clipboard" : "Add to \(name)")
+              .font(.system(size: 11, weight: .semibold))
+              .foregroundStyle(.white)
+              .padding(.horizontal, 10)
+              .padding(.vertical, 5)
+              .background(Color(red: 0.94, green: 0.34, blue: 0.15))
+              .clipShape(Capsule())
+              .shadow(color: Color(red: 0.94, green: 0.34, blue: 0.15).opacity(0.4), radius: 8)
+              .position(x: ghostX, y: max(20, ghostY - 110))
+              .allowsHitTesting(false)
+              .transition(.scale(scale: 0.85).combined(with: .opacity))
+          }
+        }
+        .animation(.spring(duration: 0.15), value: targetName)
+      }
+    }
     // New pinboard overlay (in-panel, keeps panel as key window)
     .overlay {
       if showNewPinboard {
@@ -164,6 +243,28 @@ struct CopyCatPanel: View {
       }
     }
     .animation(.spring(duration: 0.2), value: showNewPinboard)
+    .alert("Rename Pinboard", isPresented: $showRenamePinboard) {
+      TextField("New name", text: $newPinboardName)
+      Button("Save") {
+        if let p = pinboardToRename, !newPinboardName.trimmingCharacters(in: .whitespaces).isEmpty {
+          pinboardStore.renamePinboard(p, to: newPinboardName)
+        }
+      }
+      Button("Cancel", role: .cancel) {}
+    }
+    .alert("Delete Pinboard", isPresented: $showDeletePinboardConfirmation) {
+      Button("Delete", role: .destructive) {
+        if let p = pinboardToDelete {
+          pinboardStore.deletePinboard(p)
+          if selectedPinboard?.id == p.id {
+            withAnimation { selectedPinboard = nil }
+          }
+        }
+      }
+      Button("Cancel", role: .cancel) {}
+    } message: {
+      Text("Are you sure you want to delete this pinboard? This action cannot be undone.")
+    }
     .task { try? await appState.history.load() }
   }
 
@@ -215,9 +316,15 @@ struct CopyCatPanel: View {
         // Tab chips — scrollable but height-fixed
         ScrollView(.horizontal, showsIndicators: false) {
           HStack(spacing: 6) {
-            TabChip(label: "Clipboard", color: Color(red: 0.94, green: 0.34, blue: 0.15), isSelected: selectedPinboard == nil) { // branding orange #f05627
+            TabChip(
+              label: "Clipboard",
+              color: Color(red: 0.94, green: 0.34, blue: 0.15),
+              isSelected: selectedPinboard == nil,
+              isDropTarget: isClipboardDropTarget
+            ) {
               withAnimation(.easeInOut(duration: 0.15)) { selectedPinboard = nil }
             }
+            .background(tabChipGeometry("clipboard"))
             ForEach(pinboardStore.pinboards) { pinboard in
               TabChip(
                 label: pinboard.name,
@@ -227,26 +334,17 @@ struct CopyCatPanel: View {
               ) {
                 withAnimation(.easeInOut(duration: 0.15)) { selectedPinboard = pinboard }
               }
+              .background(tabChipGeometry(pinboard.id.uuidString))
               .contextMenu {
+                Button("Rename Pinboard") {
+                  pinboardToRename = pinboard
+                  newPinboardName = pinboard.name
+                  showRenamePinboard = true
+                }
                 Button("Delete Pinboard", role: .destructive) {
-                  pinboardStore.deletePinboard(pinboard)
-                  if selectedPinboard?.id == pinboard.id {
-                    withAnimation { selectedPinboard = nil }
-                  }
+                  pinboardToDelete = pinboard
+                  showDeletePinboardConfirmation = true
                 }
-              }
-              .dropDestination(for: ClipItemTransfer.self) { items, _ in
-                let ids = items.map { $0.itemID }
-                Task { @MainActor in
-                  for id in ids {
-                    if let dec = AppState.shared.history.items.first(where: { $0.id == id }) {
-                      PinboardStore.shared.move(dec, to: pinboard)
-                    }
-                  }
-                }
-                return true
-              } isTargeted: { targeted in
-                dropTargetPinboard = targeted ? pinboard : nil
               }
             }
             Button {
@@ -312,18 +410,25 @@ struct CopyCatPanel: View {
     } else {
       ForEach(matchedPinned) { dec in
         ClipCard(decorator: dec)
-          .draggable(ClipItemTransfer(itemID: dec.id))
+          .background(cardGeometry(dec.id))
+          .opacity(dragState?.id == dec.id ? 0 : 1)
+          .gesture(dragGesture(for: dec))
           .onTapGesture { tapCard(dec) }
       }
       ForEach(matchedRecent) { dec in
         ClipCard(decorator: dec)
-          .draggable(ClipItemTransfer(itemID: dec.id))
+          .background(cardGeometry(dec.id))
+          .opacity(dragState?.id == dec.id ? 0 : 1)
+          .gesture(dragGesture(for: dec))
           .onTapGesture { tapCard(dec) }
       }
       ForEach(boardResults) { result in
-        PinboardSeparator(label: String(result.board.name.prefix(4)).uppercased())
+        PinboardSeparator(label: String(result.board.name.prefix(3)).uppercased())
         ForEach(result.entries) { entry in
           PinboardEntryCard(entry: entry, pinboard: result.board)
+            .background(cardGeometry(entry.id))
+            .opacity(dragState?.id == entry.id ? 0 : 1)
+            .gesture(dragGesture(for: entry, in: result.board))
         }
       }
     }
@@ -346,14 +451,26 @@ struct CopyCatPanel: View {
       if !filteredPinned.isEmpty {
         ForEach(filteredPinned) { decorator in
           ClipCard(decorator: decorator)
-            .draggable(ClipItemTransfer(itemID: decorator.id))
+            .background(cardGeometry(decorator.id))
+            .opacity(dragState?.id == decorator.id ? 0 : 1)
+            .offset(x: shiftedCardIDs.contains(decorator.id) ? Layout.cardWidth + 12 : 0)
+            .animation(.spring(response: 0.25, dampingFraction: 0.8), value: shiftedCardIDs.contains(decorator.id))
+            .gesture(dragGesture(for: decorator))
             .onTapGesture { tapCard(decorator) }
         }
+        Color.clear
+          .frame(width: showPinnedEndGap ? Layout.cardWidth : 0, height: 1)
+          .animation(.spring(response: 0.25, dampingFraction: 0.8), value: showPinnedEndGap)
         PinboardSeparator(label: "PIN")
+          .background(separatorGeometry("clipboard_pin"))
       }
       ForEach(filteredRecent) { decorator in
         ClipCard(decorator: decorator)
-          .draggable(ClipItemTransfer(itemID: decorator.id))
+          .background(cardGeometry(decorator.id))
+          .opacity(dragState?.id == decorator.id ? 0 : 1)
+          .offset(x: shiftedCardIDs.contains(decorator.id) ? Layout.cardWidth + 12 : 0)
+          .animation(.spring(response: 0.25, dampingFraction: 0.8), value: shiftedCardIDs.contains(decorator.id))
+          .gesture(dragGesture(for: decorator))
           .onTapGesture { tapCard(decorator) }
       }
     }
@@ -365,7 +482,8 @@ struct CopyCatPanel: View {
     let allEntries = pinboardStore.entries(for: pinboard)
     let filtered = searchText.isEmpty ? allEntries : allEntries.filter { entry in
       let parsedSite = HistoryItemDecorator.AppNameParser.parse(text: entry.text) ?? ""
-      return (entry.text ?? "").localizedCaseInsensitiveContains(searchText) ||
+      return (entry.customTitle ?? "").localizedCaseInsensitiveContains(searchText) ||
+             (entry.text ?? "").localizedCaseInsensitiveContains(searchText) ||
              (entry.applicationName ?? "").localizedCaseInsensitiveContains(searchText) ||
              parsedSite.localizedCaseInsensitiveContains(searchText) ||
              (entry.fileURLStrings ?? []).joined(separator: " ").localizedCaseInsensitiveContains(searchText)
@@ -387,11 +505,25 @@ struct CopyCatPanel: View {
       if !pinnedEntries.isEmpty {
         ForEach(pinnedEntries) { entry in
           PinboardEntryCard(entry: entry, pinboard: pinboard)
+            .background(cardGeometry(entry.id))
+            .opacity(dragState?.id == entry.id ? 0 : 1)
+            .offset(x: shiftedCardIDs.contains(entry.id) ? Layout.cardWidth + 12 : 0)
+            .animation(.spring(response: 0.25, dampingFraction: 0.8), value: shiftedCardIDs.contains(entry.id))
+            .gesture(dragGesture(for: entry, in: pinboard))
         }
+        Color.clear
+          .frame(width: showPinnedEndGap ? Layout.cardWidth : 0, height: 1)
+          .animation(.spring(response: 0.25, dampingFraction: 0.8), value: showPinnedEndGap)
         PinboardSeparator(label: "PIN")
+          .background(separatorGeometry("pinboard_pin"))
       }
       ForEach(unpinnedEntries) { entry in
         PinboardEntryCard(entry: entry, pinboard: pinboard)
+          .background(cardGeometry(entry.id))
+          .opacity(dragState?.id == entry.id ? 0 : 1)
+          .offset(x: shiftedCardIDs.contains(entry.id) ? Layout.cardWidth + 12 : 0)
+          .animation(.spring(response: 0.25, dampingFraction: 0.8), value: shiftedCardIDs.contains(entry.id))
+          .gesture(dragGesture(for: entry, in: pinboard))
       }
     }
   }
@@ -403,6 +535,329 @@ struct CopyCatPanel: View {
       try? await Task.sleep(nanoseconds: 150_000_000)
       Clipboard.shared.copy(decorator.item, removeFormatting: Defaults[.removeFormattingByDefault])
       Clipboard.shared.paste()
+    }
+  }
+
+  // MARK: - Custom Drag Handlers
+
+  private func tabChipGeometry(_ key: String) -> some View {
+    GeometryReader { geo in
+      Color.clear
+        .onAppear { tabChipFrames[key] = geo.frame(in: .global) }
+        .onChange(of: geo.frame(in: .global)) { _, newFrame in
+          tabChipFrames[key] = newFrame
+        }
+    }
+  }
+
+  private func cardGeometry(_ id: UUID) -> some View {
+    GeometryReader { geo in
+      Color.clear
+        .onAppear { cardFrames[id] = geo.frame(in: .global) }
+        .onChange(of: geo.frame(in: .global)) { _, newFrame in
+          cardFrames[id] = newFrame
+        }
+    }
+  }
+
+  private func dragGesture(for decorator: HistoryItemDecorator) -> some Gesture {
+    DragGesture(minimumDistance: 3, coordinateSpace: .global)
+      .onChanged { value in
+        if dragState == nil {
+          let frame = cardFrames[decorator.id] ?? .zero
+          dragState = CustomDragState(
+            id: decorator.id,
+            decorator: decorator,
+            location: value.location,
+            startCursor: value.startLocation,
+            grabOffset: CGSize(
+              width: frame.midX - value.startLocation.x,
+              height: frame.midY - value.startLocation.y
+            )
+          )
+        }
+        dragState?.location = value.location
+        updateDropTarget(at: value.location)
+      }
+      .onEnded { value in
+        let dropped = executeDrop(at: value.location)
+        if dropped {
+          dragState = nil
+        } else {
+          withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+            dragState?.location = dragState?.startCursor ?? .zero
+          }
+          DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            dragState = nil
+          }
+        }
+        dropTargetPinboard = nil
+        isClipboardDropTarget = false
+        reorderDropIndex = nil
+        isPinToggleDrop = false
+        ghostSnapX = nil
+        showPinnedEndGap = false
+        withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) { shiftedCardIDs = [] }
+      }
+  }
+
+  private func dragGesture(for entry: PinboardEntry, in pinboard: PinboardModel) -> some Gesture {
+    DragGesture(minimumDistance: 3, coordinateSpace: .global)
+      .onChanged { value in
+        if dragState == nil {
+          let frame = cardFrames[entry.id] ?? .zero
+          dragState = CustomDragState(
+            id: entry.id,
+            entry: entry,
+            pinboard: pinboard,
+            location: value.location,
+            startCursor: value.startLocation,
+            grabOffset: CGSize(
+              width: frame.midX - value.startLocation.x,
+              height: frame.midY - value.startLocation.y
+            )
+          )
+        }
+        dragState?.location = value.location
+        updateDropTarget(at: value.location)
+      }
+      .onEnded { value in
+        let dropped = executeDrop(at: value.location)
+        if dropped {
+          dragState = nil
+        } else {
+          withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+            dragState?.location = dragState?.startCursor ?? .zero
+          }
+          DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            dragState = nil
+          }
+        }
+        dropTargetPinboard = nil
+        isClipboardDropTarget = false
+        reorderDropIndex = nil
+        isPinToggleDrop = false
+        ghostSnapX = nil
+        showPinnedEndGap = false
+        withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) { shiftedCardIDs = [] }
+      }
+  }
+
+  private func updateDropTarget(at location: CGPoint) {
+    // 1a. Toolbar-zone detection: when cursor is above the card strip, snap to the
+    //     nearest tab chip by X so users don't need pinpoint accuracy on tiny chips.
+    if dragState != nil, let minCardY = cardFrames.values.map(\.minY).min(),
+       location.y < minCardY {
+      let nearest = tabChipFrames.min(by: {
+        abs($0.value.midX - location.x) < abs($1.value.midX - location.x)
+      })
+      if let key = nearest?.key {
+        reorderDropIndex = nil
+        ghostSnapX = nil
+        isPinToggleDrop = false
+        shiftedCardIDs = []
+        showPinnedEndGap = false
+        if key == "clipboard" {
+          isClipboardDropTarget = true
+          dropTargetPinboard = nil
+        } else if let pb = pinboardStore.pinboards.first(where: { $0.id.uuidString == key }) {
+          dropTargetPinboard = pb
+          isClipboardDropTarget = false
+        }
+        return
+      }
+    }
+
+    // 1b. Precise tab chip hit test (handles cursor-on-chip cases not caught above)
+    var foundTabKey: String? = nil
+    for (key, frame) in tabChipFrames {
+      if frame.insetBy(dx: -10, dy: -10).contains(location) { foundTabKey = key; break }
+    }
+    if let key = foundTabKey {
+      reorderDropIndex = nil
+      ghostSnapX = nil
+      isPinToggleDrop = false
+      shiftedCardIDs = []
+      showPinnedEndGap = false
+      if key == "clipboard" { isClipboardDropTarget = true; dropTargetPinboard = nil }
+      else if let pb = pinboardStore.pinboards.first(where: { $0.id.uuidString == key }) {
+        dropTargetPinboard = pb; isClipboardDropTarget = false
+      }
+      return
+    }
+    isClipboardDropTarget = false
+    dropTargetPinboard = nil
+
+    guard let state = dragState else { return }
+
+    // 2. Detect pin-separator crossing — show gaps in the TARGET section
+    if detectPinCrossing(state: state, location: location) {
+      isPinToggleDrop = true
+      ghostSnapX = nil
+      if let crossIDs = crossSectionTargetIDs(for: state) {
+        let idx = insertionIndex(at: location, in: crossIDs)
+        reorderDropIndex = idx
+        shiftedCardIDs = Set(crossIDs.dropFirst(idx))
+        let targetIsPinned: Bool
+        if let dec = state.decorator { targetIsPinned = !dec.isPinned }
+        else if let entry = state.entry { targetIsPinned = !entry.isPinned }
+        else { targetIsPinned = false }
+        showPinnedEndGap = targetIsPinned
+      } else {
+        reorderDropIndex = nil
+        shiftedCardIDs = []
+        showPinnedEndGap = false
+      }
+      return
+    }
+    isPinToggleDrop = false
+
+    // 3. Reorder: open a gap, ghost follows cursor freely
+    if let ids = currentSectionReorderIDs(for: state) {
+      let idx = insertionIndex(at: location, in: ids)
+      reorderDropIndex = idx
+      ghostSnapX = nil
+      shiftedCardIDs = Set(ids.dropFirst(idx))
+      // Shift the separator right whenever reordering a pinned section so the last
+      // card can't crash into it and the end-slot is visually reachable.
+      let isPinnedReorder = state.decorator?.isPinned == true || state.entry?.isPinned == true
+      showPinnedEndGap = isPinnedReorder
+    } else {
+      reorderDropIndex = nil
+      ghostSnapX = nil
+      shiftedCardIDs = []
+      showPinnedEndGap = false
+    }
+  }
+
+  private func executeDrop(at location: CGPoint) -> Bool {
+    updateDropTarget(at: location)
+    guard let state = dragState else { return false }
+
+    if isPinToggleDrop {
+      if let dec = state.decorator {
+        let wasUnpinned = dec.isUnpinned
+        appState.history.togglePin(dec)
+        // After pinning, reorder to the gap position within the pinned section
+        if wasUnpinned, let insertIdx = reorderDropIndex,
+           let fromIdx = filteredPinned.firstIndex(of: dec) {
+          appState.history.reorderPinnedItems(fromDisplayIndex: fromIdx, toDisplayIndex: insertIdx)
+        }
+        return true
+      } else if let entry = state.entry, let pb = state.pinboard {
+        pinboardStore.togglePin(entry, in: pb)
+        // After toggling, reorder to the gap position within the target section
+        if let insertIdx = reorderDropIndex {
+          let allEntries = pinboardStore.entries(for: pb)
+          if let fromIdx = allEntries.firstIndex(where: { $0.id == entry.id }) {
+            pinboardStore.reorderEntries(in: pb, from: fromIdx, to: insertIdx)
+          }
+        }
+        return true
+      }
+    } else if isClipboardDropTarget {
+      if let entry = state.entry, let pb = state.pinboard {
+        pinboardStore.moveBack(entry, from: pb)
+        return true
+      }
+    } else if let targetPb = dropTargetPinboard {
+      if let dec = state.decorator {
+        pinboardStore.move(dec, to: targetPb)
+        return true
+      } else if let entry = state.entry, let pb = state.pinboard, pb.id != targetPb.id {
+        pinboardStore.moveEntry(entry, from: pb, to: targetPb)
+        return true
+      }
+    } else if let insertIdx = reorderDropIndex {
+      if let dec = state.decorator, dec.isPinned {
+        if let fromIdx = filteredPinned.firstIndex(of: dec) {
+          appState.history.reorderPinnedItems(fromDisplayIndex: fromIdx, toDisplayIndex: insertIdx)
+          return true
+        }
+      } else if let entry = state.entry, let pb = state.pinboard,
+                selectedPinboard?.id == pb.id {
+        let entries = pinboardStore.entries(for: pb)
+        if let fromIdx = entries.firstIndex(where: { $0.id == entry.id }) {
+          pinboardStore.reorderEntries(in: pb, from: fromIdx, to: insertIdx)
+          return true
+        }
+      }
+    }
+    return false
+  }
+
+  // MARK: - Reorder helpers
+
+  private func currentSectionReorderIDs(for state: CustomDragState) -> [UUID]? {
+    if let dec = state.decorator, dec.isPinned {
+      return filteredPinned.filter { $0.id != dec.id }.map(\.id)
+    } else if let entry = state.entry, let pb = state.pinboard,
+              selectedPinboard?.id == pb.id {
+      let entries = pinboardStore.entries(for: pb)
+      if entry.isPinned {
+        return entries.filter { $0.isPinned && $0.id != entry.id }.map(\.id)
+      } else {
+        return entries.filter { !$0.isPinned && $0.id != entry.id }.map(\.id)
+      }
+    }
+    return nil
+  }
+
+  private func crossSectionTargetIDs(for state: CustomDragState) -> [UUID]? {
+    if let dec = state.decorator, selectedPinboard == nil {
+      return dec.isPinned ? filteredRecent.map(\.id) : filteredPinned.map(\.id)
+    } else if let entry = state.entry, let pb = state.pinboard,
+              selectedPinboard?.id == pb.id {
+      let entries = pinboardStore.entries(for: pb)
+      if entry.isPinned {
+        return entries.filter { !$0.isPinned }.map(\.id)
+      } else {
+        return entries.filter { $0.isPinned }.map(\.id)
+      }
+    }
+    return nil
+  }
+
+  private func insertionIndex(at location: CGPoint, in ids: [UUID]) -> Int {
+    for (i, id) in ids.enumerated() {
+      guard let frame = cardFrames[id] else { continue }
+      if location.x < frame.midX { return i }
+    }
+    return ids.count
+  }
+
+  private func gapSnapX(at index: Int, in ids: [UUID]) -> CGFloat? {
+    let frames = ids.compactMap { cardFrames[$0] }
+    guard !frames.isEmpty else { return nil }
+    let half = Layout.cardWidth / 2
+    if index == 0 { return frames[0].minX - 6 - half }
+    if index >= frames.count { return frames[frames.count - 1].maxX + 6 + half }
+    return frames[index - 1].maxX + 6 + half
+  }
+
+  private func detectPinCrossing(state: CustomDragState, location: CGPoint) -> Bool {
+    if let dec = state.decorator, selectedPinboard == nil {
+      if dec.isPinned, let sep = separatorFrames["clipboard_pin"] {
+        return location.x > sep.maxX
+      } else if !dec.isPinned, let sep = separatorFrames["clipboard_pin"] {
+        return location.x < sep.minX
+      }
+    } else if let entry = state.entry, let pb = state.pinboard,
+              selectedPinboard?.id == pb.id {
+      if entry.isPinned, let sep = separatorFrames["pinboard_pin"] {
+        return location.x > sep.maxX
+      } else if !entry.isPinned, let sep = separatorFrames["pinboard_pin"] {
+        return location.x < sep.minX
+      }
+    }
+    return false
+  }
+
+  private func separatorGeometry(_ key: String) -> some View {
+    GeometryReader { geo in
+      Color.clear
+        .onAppear { separatorFrames[key] = geo.frame(in: .global) }
+        .onChange(of: geo.frame(in: .global)) { _, f in separatorFrames[key] = f }
     }
   }
 

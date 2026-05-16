@@ -46,6 +46,9 @@ struct ClipCard: View {
   @State private var ogImage: NSImage? = nil
   @State private var fetchTask: Task<Void, Never>? = nil
   @State private var isHovered = false
+  @State private var showRenameTitle = false
+  @State private var newTitle = ""
+  @State private var showSensitiveAlert = false
 
   private var cardType: ClipCardType {
     if decorator.hasImage { return .image }
@@ -101,9 +104,12 @@ struct ClipCard: View {
         }
 
         VStack(alignment: .leading, spacing: 0) {
-          Text(cardType.label)
+          Text(decorator.item.customTitle ?? cardType.label)
             .font(.system(size: 12, weight: .bold))
             .foregroundStyle(headerForeground)
+            .lineLimit(1)
+            .truncationMode(.tail)
+            .help(decorator.item.customTitle ?? cardType.label)
           Text(appName)
             .font(.system(size: 10, weight: .medium))
             .foregroundStyle(headerForeground.opacity(0.9))
@@ -129,7 +135,7 @@ struct ClipCard: View {
           // Text/fallback preview
           switch cardType {
           case .link:
-            Text(ogMeta?.title ?? String(decorator.text.prefix(120)))
+            Text(String(decorator.text.prefix(120)))
               .font(.system(size: 11))
               .foregroundStyle(Color(red: 0.90, green: 0.89, blue: 0.88))
               .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -205,7 +211,34 @@ struct ClipCard: View {
         .transition(.scale(scale: 0.7).combined(with: .opacity))
       }
     }
+    .overlay(alignment: .bottomLeading) {
+      if decorator.isSensitive {
+        Button {
+          showSensitiveAlert = true
+        } label: {
+          Image(systemName: "exclamationmark.shield.fill")
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(Color(red: 1.0, green: 0.8, blue: 0.2))
+            .frame(width: 26, height: 26)
+            .background(Color.black.opacity(0.55))
+            .clipShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .padding(6)
+        .help("Sensitive content detected — tap to delete")
+      }
+    }
     .contextMenu {
+      if decorator.isSensitive {
+        Button(role: .destructive) { showSensitiveAlert = true } label: {
+          Label("Delete Sensitive Item", systemImage: "exclamationmark.shield.fill")
+        }
+        Divider()
+      }
+      Button("Rename Title") {
+        newTitle = decorator.item.customTitle ?? cardType.label
+        showRenameTitle = true
+      }
       Button(decorator.isPinned ? "Unpin" : "Pin") {
         Task { @MainActor in AppState.shared.history.togglePin(decorator) }
       }
@@ -266,6 +299,25 @@ struct ClipCard: View {
     .onDisappear {
       fetchTask?.cancel()
       fetchTask = nil
+    }
+    .alert("Rename Title", isPresented: $showRenameTitle) {
+      TextField("Title", text: $newTitle)
+      Button("Save") {
+        let t = newTitle.trimmingCharacters(in: .whitespaces)
+        decorator.item.customTitle = t.isEmpty ? nil : t
+      }
+      Button("Reset to Default") {
+        decorator.item.customTitle = nil
+      }
+      Button("Cancel", role: .cancel) {}
+    }
+    .alert("Delete Sensitive Item?", isPresented: $showSensitiveAlert) {
+      Button("Delete", role: .destructive) {
+        Task { @MainActor in AppState.shared.history.delete(decorator) }
+      }
+      Button("Cancel", role: .cancel) {}
+    } message: {
+      Text("This item looks like a secret (token, API key, or private key). Delete it from clipboard history?")
     }
   }
 }

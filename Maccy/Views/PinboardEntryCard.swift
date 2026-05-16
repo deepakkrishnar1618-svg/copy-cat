@@ -8,6 +8,8 @@ struct PinboardEntryCard: View {
   @State private var ogMeta: OGMetadata? = nil
   @State private var ogImage: NSImage? = nil
   @State private var fetchTask: Task<Void, Never>? = nil
+  @State private var showRenameTitle = false
+  @State private var newTitle = ""
 
   // MARK: - Derived card properties
 
@@ -90,6 +92,17 @@ struct PinboardEntryCard: View {
       fetchTask?.cancel()
       fetchTask = nil
     }
+    .alert("Rename Title", isPresented: $showRenameTitle) {
+      TextField("Title", text: $newTitle)
+      Button("Save") {
+        let t = newTitle.trimmingCharacters(in: .whitespaces)
+        PinboardStore.shared.setCustomTitle(t.isEmpty ? nil : t, for: entry, in: pinboard)
+      }
+      Button("Reset to Default") {
+        PinboardStore.shared.setCustomTitle(nil, for: entry, in: pinboard)
+      }
+      Button("Cancel", role: .cancel) {}
+    }
   }
 
   // MARK: - Header
@@ -116,9 +129,12 @@ struct PinboardEntryCard: View {
       }
 
       VStack(alignment: .leading, spacing: 0) {
-        Text(cardType.label)
+        Text(entry.customTitle ?? cardType.label)
           .font(.system(size: 12, weight: .bold))
           .foregroundStyle(headerForeground)
+          .lineLimit(1)
+          .truncationMode(.tail)
+          .help(entry.customTitle ?? cardType.label)
         Text(appName)
           .font(.system(size: 10, weight: .medium))
           .foregroundStyle(headerForeground.opacity(0.9))
@@ -156,7 +172,7 @@ struct PinboardEntryCard: View {
   private var contentText: some View {
     switch cardType {
     case .link:
-      Text(ogMeta?.title ?? String((entry.text ?? "").prefix(120)))
+      Text(String((entry.text ?? "").prefix(120)))
         .font(.system(size: 11))
         .foregroundStyle(Color(red: 0.90, green: 0.89, blue: 0.88))
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -224,6 +240,10 @@ struct PinboardEntryCard: View {
 
   @ViewBuilder
   private var contextMenuItems: some View {
+    Button("Rename Title") {
+      newTitle = entry.customTitle ?? cardType.label
+      showRenameTitle = true
+    }
     Button(entry.isPinned ? "Unpin" : "Pin") {
       Task { @MainActor in PinboardStore.shared.togglePin(entry, in: pinboard) }
     }
@@ -298,14 +318,18 @@ struct PinboardEntryCard: View {
     fetchTask = Task {
       let meta = await OGFetcher.shared.fetch(urlString: urlString)
       await MainActor.run { ogMeta = meta }
-      if let imageURL = meta.ogImageURL {
-        do {
-          let (data, _) = try await URLSession.shared.data(from: imageURL)
-          if let img = NSImage(data: data) {
-            await MainActor.run { ogImage = img }
-          }
-        } catch {}
+      guard let imageURL = meta.ogImageURL else { return }
+      if let cached = await OGImageCache.shared.image(for: imageURL) {
+        await MainActor.run { ogImage = cached }
+        return
       }
+      do {
+        let (data, _) = try await URLSession.shared.data(from: imageURL)
+        if let img = NSImage(data: data) {
+          await OGImageCache.shared.store(img, for: imageURL)
+          await MainActor.run { ogImage = img }
+        }
+      } catch {}
     }
   }
 }

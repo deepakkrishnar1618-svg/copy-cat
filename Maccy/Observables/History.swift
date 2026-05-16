@@ -427,6 +427,32 @@ class History: ItemsContainer { // swiftlint:disable:this type_body_length
   }
 
   @MainActor
+  func reorderPinnedItems(fromDisplayIndex: Int, toDisplayIndex: Int) {
+    let pinned = items.filter(\.isPinned)
+    guard fromDisplayIndex < pinned.count else { return }
+    let item = pinned[fromDisplayIndex]
+
+    func reordered(_ arr: [HistoryItemDecorator]) -> [HistoryItemDecorator] {
+      var result = arr
+      guard let src = result.firstIndex(of: item) else { return result }
+      result.remove(at: src)
+      let pinnedNow = result.filter(\.isPinned)
+      let to = min(toDisplayIndex, pinnedNow.count)
+      if to < pinnedNow.count, let dst = result.firstIndex(of: pinnedNow[to]) {
+        result.insert(item, at: dst)
+      } else if let last = result.lastIndex(where: \.isPinned) {
+        result.insert(item, at: last + 1)
+      } else {
+        result.insert(item, at: 0)
+      }
+      return result
+    }
+
+    all = reordered(all)
+    items = reordered(items)
+  }
+
+  @MainActor
   func togglePin(_ item: HistoryItemDecorator?) {
     guard let item else { return }
 

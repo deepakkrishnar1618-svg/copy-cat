@@ -163,8 +163,26 @@ class HistoryItemDecorator: Identifiable, Hashable, HasVisibility {
   // 10k characters seems to be more than enough on large displays
   var text: String { item.previewableText.shortened(to: 10_000) }
 
+  var searchableText: String {
+    if let customTitle = item.customTitle {
+      return title + " " + customTitle
+    }
+    return title
+  }
+
   var isPinned: Bool { item.pin != nil }
   var isUnpinned: Bool { item.pin == nil }
+
+  var isSensitive: Bool {
+    guard let text = item.text else { return false }
+    let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard t.count > 8, !t.hasPrefix("http://"), !t.hasPrefix("https://") else { return false }
+    return t.hasPrefix("Bearer ") || t.hasPrefix("bearer ") ||
+           t.hasPrefix("sk-") || t.hasPrefix("ghp_") || t.hasPrefix("ghs_") || t.hasPrefix("gho_") ||
+           t.hasPrefix("xoxb-") || t.hasPrefix("xoxp-") || t.hasPrefix("xoxa-") ||
+           t.hasPrefix("AKIA") || t.hasPrefix("AIza") ||
+           t.hasPrefix("-----BEGIN ") || t.hasPrefix("eyJ")
+  }
 
   func hash(into hasher: inout Hasher) {
     // We need to hash title and attributedTitle, so SwiftUI knows it needs to update the view if they chage

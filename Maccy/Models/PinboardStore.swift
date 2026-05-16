@@ -26,6 +26,7 @@ struct PinboardEntry: Codable, Identifiable {
   var fileURLStrings: [String]?
   var copiedAt: Date
   var isPinned: Bool
+  var customTitle: String?
 
   var fileURLs: [URL] {
     (fileURLStrings ?? []).compactMap { URL(string: $0) }
@@ -41,6 +42,7 @@ struct PinboardEntry: Codable, Identifiable {
     self.fileURLStrings = fileURLStrings
     self.copiedAt = Date()
     self.isPinned = false
+    self.customTitle = nil
   }
 
   // Backward-compatible decode: new fields default gracefully for old entries
@@ -55,6 +57,7 @@ struct PinboardEntry: Codable, Identifiable {
     fileURLStrings = try c.decodeIfPresent([String].self, forKey: .fileURLStrings)
     copiedAt = try c.decode(Date.self, forKey: .copiedAt)
     isPinned = (try? c.decode(Bool.self, forKey: .isPinned)) ?? false
+    customTitle = try c.decodeIfPresent(String.self, forKey: .customTitle)
   }
 }
 
@@ -78,6 +81,15 @@ final class PinboardStore {
     return pinned + unpinned
   }
 
+  func findEntry(with id: UUID) -> (entry: PinboardEntry, pinboard: PinboardModel)? {
+    for pinboard in pinboards {
+      if let entry = entriesByPinboard[pinboard.id]?.first(where: { $0.id == id }) {
+        return (entry, pinboard)
+      }
+    }
+    return nil
+  }
+
   func createPinboard(name: String, colorHex: String) {
     let p = PinboardModel(name: name, colorHex: colorHex)
     pinboards.append(p)
@@ -86,7 +98,7 @@ final class PinboardStore {
   }
 
   @MainActor func move(_ decorator: HistoryItemDecorator, to pinboard: PinboardModel) {
-    let entry = PinboardEntry(
+    var entry = PinboardEntry(
       pinboardId: pinboard.id,
       text: decorator.item.text,
       applicationName: decorator.application,
@@ -94,6 +106,7 @@ final class PinboardStore {
       imageData: decorator.item.imageData,
       fileURLStrings: decorator.item.fileURLs.isEmpty ? nil : decorator.item.fileURLs.map { $0.absoluteString }
     )
+    entry.customTitle = decorator.item.customTitle
     entriesByPinboard[pinboard.id, default: []].append(entry)
     AppState.shared.history.delete(decorator)
     save()
@@ -120,17 +133,25 @@ final class PinboardStore {
     }
     delete(entry, from: pinboard)
     Clipboard.shared.checkForChangesInPasteboard()
+
+    if let customTitle = entry.customTitle {
+      // The newly added item is at the top of unpinned items
+      if let topUnpinned = AppState.shared.history.unpinnedItems.first {
+        topUnpinned.item.customTitle = customTitle
+      }
+    }
   }
 
   /// Move a pinboard entry from one pinboard to another.
   @MainActor func moveEntry(_ entry: PinboardEntry, from source: PinboardModel, to destination: PinboardModel) {
-    let transferred = PinboardEntry(
+    var transferred = PinboardEntry(
       pinboardId: destination.id,
       text: entry.text,
       applicationName: entry.applicationName,
       imageData: entry.imageData,
       fileURLStrings: entry.fileURLStrings
     )
+    transferred.customTitle = entry.customTitle
     entriesByPinboard[destination.id, default: []].append(transferred)
     delete(entry, from: source)
     save()
@@ -145,6 +166,40 @@ final class PinboardStore {
   func delete(_ entry: PinboardEntry, from pinboard: PinboardModel) {
     entriesByPinboard[pinboard.id]?.removeAll { $0.id == entry.id }
     save()
+  }
+
+  func reorderEntries(in pinboard: PinboardModel, from fromIndex: Int, to toIndex: Int) {
+    guard fromIndex != toIndex else { return }
+    let display = entries(for: pinboard)
+    guard fromIndex < display.count else { return }
+
+    let moved = display[fromIndex]
+    let isPinnedEntry = moved.isPinned
+    let sameGroup = display.filter { $0.isPinned == isPinnedEntry && $0.id != moved.id }
+    let pinnedEntries = display.filter { $0.isPinned }
+    let unpinnedEntries = display.filter { !$0.isPinned }
+
+    var newGroup = sameGroup
+    newGroup.insert(moved, at: min(toIndex, newGroup.count))
+
+    entriesByPinboard[pinboard.id] = isPinnedEntry
+      ? newGroup + unpinnedEntries
+      : pinnedEntries + newGroup
+    save()
+  }
+
+  func setCustomTitle(_ title: String?, for entry: PinboardEntry, in pinboard: PinboardModel) {
+    if let idx = entriesByPinboard[pinboard.id]?.firstIndex(where: { $0.id == entry.id }) {
+      entriesByPinboard[pinboard.id]?[idx].customTitle = title
+      save()
+    }
+  }
+
+  func renamePinboard(_ pinboard: PinboardModel, to newName: String) {
+    if let idx = pinboards.firstIndex(where: { $0.id == pinboard.id }) {
+      pinboards[idx].name = newName
+      save()
+    }
   }
 
   func deletePinboard(_ pinboard: PinboardModel) {
